@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 
@@ -34,14 +34,21 @@ train_x = train.iloc[:,1:] # isolates all 784 pixel columns and skips the 0th co
 train_y = train.iloc[:,0] # isolates the 0th column (labels)
 X_train, X_test, y_train, y_test = train_test_split(train_x, train_y, test_size=0.25, stratify=train_y, random_state=42)
 
-# Instantiate the Random Forest and fit the classifier to our data
-rf = RandomForestClassifier(n_estimators=250, max_samples=0.5, random_state=42)
-rf.fit(X_train, y_train)
+# Instantiate the Random Forest
+rf = RandomForestClassifier(random_state=42)
+
+# Using GridSearchCV to evaluate model accuracy
+params_rf = {'n_estimators': [200, 300]}
+grid_rf = GridSearchCV(estimator=rf, param_grid=params_rf, cv=3, scoring='accuracy')
+grid_rf.fit(X_train, y_train)
+best_hyperparams = grid_rf.best_params_
+print(best_hyperparams)
+best_model = grid_rf.best_estimator_
 
 # Predict y_pred labels using X_test and calculate accuracy, confusion matrix, and classification report
-y_pred = rf.predict(X_test)
-rf.score(X_train, y_train) # training sample accuracy
-rf.score(X_test, y_test) # training sample accuracy
+y_pred = best_model.predict(X_test)
+best_model.score(X_train, y_train) # training sample accuracy
+best_model.score(X_test, y_test) # training sample accuracy
 
 confusion_matrix = confusion_matrix(y_test, y_pred) # rows represent the real classes, columns represent the predicted classes
 sns.heatmap(confusion_matrix, annot=True, annot_kws={"fontsize":8})
@@ -56,13 +63,13 @@ print(y_pred[0:10])
 print(y_test[0:10] == y_pred[0:10])
 
 # Predict the labels for the test DataFrame and check a couple images & their predicted labels
-test_pred = rf.predict(test)
+test_pred = best_model.predict(test)
 
 first_ten_predicted_labels = []
 for x in range(10):
     image = test.iloc[x,:].values
     image = image.reshape(28,28)
     plt.imshow(image)
-    # plt.show()
+    plt.show()
     first_ten_predicted_labels.append(test_pred[x])
 print(first_ten_predicted_labels) # compare this list to the shown images from the above for loop
